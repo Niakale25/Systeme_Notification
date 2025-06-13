@@ -25,5 +25,16 @@ public class GestionnaireAbonnement implements IGestionnaireAbonnement {
     public List<Employe> getAbonnes() {
         return abonnes;
     }
+    public void afficherAbonnes() {
+        if (abonnes.isEmpty()) {
+            System.out.println("Aucun employé abonné pour le moment.");
+        } else {
+            System.out.println("Liste des employés abonnés :");
+            for (Employe e : abonnes) {
+                System.out.println("- " + e.getNomComplet() + " (" + e.getEmail() + ")");
+            }
+        }
+    }
+
 }
 

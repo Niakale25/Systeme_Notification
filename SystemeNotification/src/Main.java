@@ -16,66 +16,52 @@ public class Main {
         GestionnaireEmploye gestionEmploye = new GestionnaireEmploye();
         GestionnaireAbonnement gestionAbonnement = new GestionnaireAbonnement();
 
-        // Employés existants pour les tests
-        Employe e1 = new Employe(1, "DIAKITE", "Niakalé", "niakidiaki@gmail.com",Role.EMPLOYE);
-        Employe e2 = new Employe(2, "DIAWARA", "Fatoumata", "elinkalika@gmail.com",Role.EMPLOYE);
-        Employe e3 = new Employe(3, "Bagayoko", "Amadou", "abagayoko304@gmail.com",Role.EMPLOYE);
+        // Employés existants avec mot de passe
+        Employe e1 = new Employe(1, "DIAKITE", "Niakalé", "niakidiaki@gmail.com", "pass1", Role.EMPLOYE);
+        Employe e2 = new Employe(2, "DIAWARA", "Fatoumata", "elinkalika@gmail.com", "pass2", Role.EMPLOYE);
+        Employe e3 = new Employe(3, "Bagayoko", "Amadou", "abagayoko304@gmail.com", "pass3", Role.EMPLOYE);
+
         gestionEmploye.ajouterEmploye(e1);
         gestionEmploye.ajouterEmploye(e2);
         gestionEmploye.ajouterEmploye(e3);
-        // Modes de notifications disponibles
+
+        // Service d'authentification
+        AuthentificationService authService = new AuthentificationService(gestionEmploye.listerEmployes());
+
+        // Modes de notification
         List<INotification> modes = new ArrayList<>();
         modes.add(new NotificationConsole());
         modes.add(new NotificationEmail());
 
         GestionnaireNotification gestionNotif = new GestionnaireNotification(modes, gestionAbonnement);
 
-        while (true) { // boucle infinie pour revenir au menu de connexion
+        while (true) {
             System.out.println("\n=== Menu Connexion ===");
-            System.out.println("1. Gestionnaire");
-            System.out.println("2. Employé");
-            System.out.println("3. Quitter");
-            System.out.print("Choix : ");
-            int role = sc.nextInt();
-            sc.nextLine(); // vider le buffer
+            Employe user = authService.seConnecter(); // Utilisation du service d'authentification
 
-            if (role == 1) {
-                menuGestionnaire(sc, gestionEmploye); // va dans le menu gestionnaire
-            } else if (role == 2) {
-                System.out.println("Choisir un employé par ID :");
-                gestionEmploye.listerEmployes().forEach(e -> System.out.println(e.getId() + " : " + e.getNomComplet()));
-                int id = sc.nextInt();
-                sc.nextLine(); // vider le buffer
-                Employe courant = gestionEmploye.listerEmployes().stream()
-                        .filter(e -> e.getId() == id)
-                        .findFirst()
-                        .orElse(null);
+            if (user == null) {
+                System.out.println("Connexion échouée. Réessayer.");
+                continue;
+            }
 
-                if (courant != null) {
-                    menuEmploye(sc, courant, gestionAbonnement, gestionNotif); // va dans le menu employé
-                } else {
-                    System.out.println("ID invalide.");
-                }
-            } else if (role == 3) {
-                System.out.println("Fermeture du programme. Au revoir !");
-                break; // quitte la boucle donc le programme
-            } else {
-                System.out.println("Choix invalide.");
+            if (user.getRole() == Role.GESTIONNAIRE) {
+                menuGestionnaire(sc, gestionEmploye, gestionAbonnement); // menu gestionnaire
+            } else if (user.getRole() == Role.EMPLOYE) {
+                menuEmploye(sc, user, gestionAbonnement, gestionNotif); // menu employé
             }
         }
-
-        sc.close();
     }
 
     // Menu Gestionnaire
-    static void menuGestionnaire(Scanner sc, GestionnaireEmploye gestion) {
+    static void menuGestionnaire(Scanner sc, GestionnaireEmploye gestion, GestionnaireAbonnement abonnement) {
         int c;
         do {
             System.out.println("\n*** Menu Gestionnaire ***");
             System.out.println("1. Ajouter employé");
             System.out.println("2. Retirer employé");
             System.out.println("3. Lister employés");
-            System.out.println("4. Déconnexion");
+            System.out.println("4. Afficher abonnés");
+            System.out.println("5. Déconnexion");
             System.out.print("Choix : ");
             c = sc.nextInt();
             sc.nextLine();
@@ -91,7 +77,9 @@ public class Main {
                     String prenom = sc.nextLine();
                     System.out.print("Email : ");
                     String mail = sc.nextLine();
-                    gestion.ajouterEmploye(new Employe(id, nom, prenom, mail, Role.EMPLOYE));
+                    System.out.print("Mot de passe : ");
+                    String mdp = sc.nextLine();
+                    gestion.ajouterEmploye(new Employe(id, nom, prenom, mail, mdp, Role.EMPLOYE));
                     System.out.println("Employé ajouté.");
                     break;
                 case 2:
@@ -115,12 +103,15 @@ public class Main {
                             System.out.println(e.getId() + " - " + e.getNomComplet()));
                     break;
                 case 4:
-                    System.out.println("Déconnexion du gestionnaire...");
+                    abonnement.afficherAbonnes();
+                    break;
+                case 5:
+                    System.out.println("Déconnexion...");
                     break;
                 default:
                     System.out.println("Option invalide.");
             }
-        } while (c != 4);
+        } while (c != 5);
     }
 
     // Menu Employé
@@ -159,7 +150,7 @@ public class Main {
                     courant.afficherNotificationsRecues();
                     break;
                 case 6:
-                    System.out.println("Déconnexion de l'employé...");
+                    System.out.println("Déconnexion...");
                     break;
                 default:
                     System.out.println("Choix invalide.");
